@@ -8,6 +8,7 @@ import { ApolloServer } from 'apollo-server-express';
 import { buildSchema } from 'type-graphql';
 import { HelloResolver } from './resolvers/hello';
 import { PostResolver } from './resolvers/post';
+import { UserResolver } from './resolvers/user';
 
 // async main funtion
 const Main = async () => {
@@ -22,7 +23,7 @@ const Main = async () => {
     // create apollo server passing a schema
     const apolloServer = new ApolloServer({
         schema: await buildSchema({
-            resolvers: [HelloResolver, PostResolver],
+            resolvers: [HelloResolver, PostResolver, UserResolver],
             validate: false
         }),
         // object accessible by resolvers (we pass orm.em to manage the DB in the resolvers)

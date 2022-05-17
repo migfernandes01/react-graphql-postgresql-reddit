@@ -1,4 +1,4 @@
-import { Resolver, ObjectType, Field, Query, Mutation, Arg, Ctx } from 'type-graphql';
+import { Resolver, ObjectType, Query, Field, Mutation, Arg, Ctx } from 'type-graphql';
 import { MyContext } from '../types';
 import { User } from '../entities/User';
 import argon2 from 'argon2';
@@ -12,6 +12,7 @@ class FieldError {
     message: string;
 }
 
+// Object type for return (with optional fields: errors and user)
 @ObjectType()
 class UserResponse {
     @Field(() => [FieldError], { nullable: true })
@@ -24,6 +25,26 @@ class UserResponse {
 // Resolver class with either mutations or queries
 @Resolver()
 export class UserResolver {
+    // Query to check if user is logged in or not 
+    // (through session stored)
+    @Query(() => UserResponse)
+    async me(@Ctx() ctx: MyContext){
+
+        // if no userId in req session (not logged in)
+        if(!ctx.req.session.userId){
+            return {
+                errors: [{
+                    field: 'Not logged in',
+                    message: 'User is not logged in'
+                }]
+            }
+        }
+
+        // fetch user with the user id stored in session
+        const user = await ctx.em.findOne(User, { id: ctx.req.session.userId });
+        // return user
+        return { user };
+    }
 
     // Mutation to register user
     // Takes username and password
@@ -76,6 +97,9 @@ export class UserResolver {
                 }
             }
         }
+
+        // set session cookie (log user in)
+        ctx.req.session.userId = user.id;
         
         // return user
         return {
@@ -116,6 +140,9 @@ export class UserResolver {
                 }],
             };
         }
+
+        // set session cookie (log user in)
+        ctx.req.session.userId = user.id; 
 
         // return user
         return {

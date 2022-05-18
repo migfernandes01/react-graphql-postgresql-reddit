@@ -2,6 +2,7 @@ import React from 'react';
 import { Box, Button, Flex, Link as ChakraLink } from '@chakra-ui/react';
 import Link from 'next/link';
 import { useLogoutMutation, useMeQuery } from '../generated/graphql';
+import { isServer } from '../utils/isServer';
 
 interface NavBarProps {
 
@@ -10,7 +11,9 @@ interface NavBarProps {
 export const NavBar: React.FC<NavBarProps> = ({}) => {
     // run 'me()' query to detect logged in user
     // and get data and fetching
-    const [{data, fetching}] = useMeQuery();
+    const [{data, fetching}] = useMeQuery({
+        pause: isServer()                   // don't user query during server side render (uses util function to detect)
+    });
 
     // logout mutation
     const [{fetching: logoutFetching}, logout] = useLogoutMutation();

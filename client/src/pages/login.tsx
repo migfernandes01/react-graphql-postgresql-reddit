@@ -1,20 +1,20 @@
-// register page
+// login page
 import React from 'react';
 import { Form, Formik } from 'formik';
 import { Wrapper } from '../components/Wrapper';
 import { InputField } from '../components/InputField';
 import { Box, Button } from '@chakra-ui/react';
-import { useRegisterMutation } from '../generated/graphql';
+import { useLoginMutation } from '../generated/graphql';
 import { toErrorMap } from '../utils/toErrorMap';
 import { useRouter } from 'next/router';
 
-interface registerProps {
+interface loginProps {
 
 };
 
-const Register: React.FC<registerProps> = ({}) => {
+const Login: React.FC<loginProps> = ({}) => {
     // urql + graphql codegen mutation hook to create a mutation
-    const [, register] = useRegisterMutation();
+    const [, login] = useLoginMutation();
 
     // initialize nextjs router
     const router = useRouter();
@@ -24,13 +24,13 @@ const Register: React.FC<registerProps> = ({}) => {
             <Formik 
                 initialValues={{username: '', password: ''}}
                 onSubmit={ async(values, {setErrors}) =>  {
-                    // register using URQL mutation and get response back
-                    const response = await register({username: values.username, password: values.password});
+                    // login using URQL mutation and get response back
+                    const response = await login({username: values.username, password: values.password});
                     // if there is errors
-                    if(response.data?.register.errors) {
+                    if(response.data?.login.errors) {
                         // set errors to what was returned
-                        setErrors(toErrorMap(response.data.register.errors))
-                    } else if(response.data?.register.user) {
+                        setErrors(toErrorMap(response.data.login.errors))
+                    } else if(response.data?.login.user) {
                         // user registered successfully
                         // push him to /
                         router.push('/');
@@ -53,7 +53,7 @@ const Register: React.FC<registerProps> = ({}) => {
                             />
                         </Box>
                         <Button mt={4} type='submit' color='teal' isLoading={isSubmitting}>
-                            Register
+                            Login
                         </Button>
                     </Form>
                 )}
@@ -63,4 +63,4 @@ const Register: React.FC<registerProps> = ({}) => {
 };
 
 
-export default Register;
+export default Login;

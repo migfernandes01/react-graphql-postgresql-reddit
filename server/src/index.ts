@@ -14,6 +14,7 @@ import session from "express-session";
 import connectReddis from 'connect-redis';
 import { createClient } from "redis";
 import { MyContext } from './types';
+import cors from 'cors';
 
 // async main funtion
 const Main = async () => {
@@ -29,6 +30,13 @@ const Main = async () => {
     const RedisStore = connectReddis(session);
     const redisClient = createClient({ legacyMode: true });
     redisClient.connect().catch(console.error);
+
+    // use cors in every route accepting CORS from localhost:300
+    // and accepting credentials
+    app.use(cors({
+        origin: "http://localhost:3000",
+        credentials: true,
+    }))
 
     // session middleware
     app.use(
@@ -50,8 +58,6 @@ const Main = async () => {
         })
     );
 
-    const cors = { credentials: true, origin: 'https://studio.apollographql.com' }
-
     // create apollo server passing a schema
     const apolloServer = new ApolloServer({
         schema: await buildSchema({
@@ -72,7 +78,7 @@ const Main = async () => {
     await apolloServer.start();
 
     // create graphql endpoint on express server
-    apolloServer.applyMiddleware({ app, cors });
+    apolloServer.applyMiddleware({ app, cors: false });
 
     // listen on port 4000
     app.listen(4000, () => {

@@ -5,7 +5,7 @@ import { AppProps } from 'next/app';
 import { Provider, createClient, dedupExchange, fetchExchange } from 'urql';
 import { cacheExchange, Cache, QueryInput } from '@urql/exchange-graphcache';
 import {extendTheme} from '@chakra-ui/react';
-import { LoginMutation, MeDocument, MeQuery, RegisterMutation } from '../generated/graphql';
+import { LoginMutation, LogoutMutation, MeDocument, MeQuery, RegisterMutation } from '../generated/graphql';
 
 // theme config
 const config: ThemeConfig = {
@@ -15,12 +15,13 @@ const config: ThemeConfig = {
 
 const theme = extendTheme({ config });
 
-// helper function to 
+// helper function to run a query after a mutation
+// <MutationRan, QueryToRun>
 function betterUpdateQuery<Result, Query> (
   cache: Cache,
   qi: QueryInput,
   result: any,
-  fn: (r: Result, q: Query) => Query
+  fn: (r: Result, q: Query) => any
 ){
   return cache.updateQuery(qi, data => fn(result, data as any) as any)
 }
@@ -38,6 +39,16 @@ function MyApp({ Component, pageProps }: AppProps) {
       updates: {
         // run functions after executing certain mutations
         Mutation: {
+          // run this when logout mutation executes
+          logout: (_result, args, cache, info) => {
+            // return user as null after Logout Mutation
+            betterUpdateQuery<LogoutMutation, MeQuery>(
+              cache, 
+              { query: MeDocument },
+              _result,
+              () => ({ me: null })
+            )
+          },
           // run this when login mutation executes
           login: (_result, args, cache, info) => { 
             // call 'me()' query

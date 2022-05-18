@@ -2,6 +2,7 @@ import { Resolver, ObjectType, Query, Field, Mutation, Arg, Ctx } from 'type-gra
 import { MyContext } from '../types';
 import { User } from '../entities/User';
 import argon2 from 'argon2';
+import { COOKIE_NAME } from '../constants';
 
 // Object type for an error with a field
 @ObjectType()
@@ -148,5 +149,29 @@ export class UserResolver {
         return {
             user: user
         };
+    }
+
+    // Mutation to log user out
+    // Gets context object with req
+    @Mutation(() => Boolean)
+    logout(
+        @Ctx() ctx:MyContext
+    ){
+        // return result of promise to req.session.destroy
+        // to destroy session in redis
+        return new Promise(resolve => ctx.req.session.destroy((err: any)=> {
+            // if error, return false
+            if(err){
+                console.log(err);
+                resolve(false);
+                return;
+            }
+
+            // clear cookie (browser)
+            ctx.res.clearCookie(COOKIE_NAME);
+
+            // else return true
+            resolve(true);
+        }))
     }
 }

@@ -60,7 +60,7 @@ export const ChangePassword: NextPage<{token: string}> = ({ token }) => {
                             <Box>
                                 <Box color='red'>{tokenError}</Box>
                                 <Link href='/forgot-password'>
-                                    <Button variant='link' color='red'>Forgot password</Button>
+                                    <Button variant='link' color='red'>Forgot password?</Button>
                                 </Link>
                             </Box>
                         )}

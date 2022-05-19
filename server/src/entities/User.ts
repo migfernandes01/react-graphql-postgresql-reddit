@@ -30,6 +30,12 @@ export class User {
     @Property({ type: 'text', unique: true })
     username!: string;
 
+    // Field for GQL
+    // Property for postgres (unique field)
+    @Field()
+    @Property({ type: 'text', unique: true })
+    email!: string;
+
     // Field for GQL is not here, because we don't want to expose this field to GQL
     // Property for postgres
     @Property({ type: 'text' })

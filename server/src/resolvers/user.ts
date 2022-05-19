@@ -2,7 +2,10 @@ import { Resolver, ObjectType, Query, Field, Mutation, Arg, Ctx } from 'type-gra
 import { MyContext } from '../types';
 import { User } from '../entities/User';
 import argon2 from 'argon2';
-import { COOKIE_NAME } from '../constants';
+import { COOKIE_NAME, FORGET_PASSWORD_PREFIX } from '../constants';
+import { validateRegister } from '../utils/validateRegister';
+import { sendEmail } from '../utils/sendEmail';
+import { v4 } from 'uuid';
 
 // Object type for an error with a field
 @ObjectType()
@@ -54,26 +57,15 @@ export class UserResolver {
     async register(
         @Arg("username", () => String) username: string,
         @Arg("password", () => String) password: string,
+        @Arg("email", () => String) email: string,
         @Ctx() ctx: MyContext
     ): Promise <UserResponse>{
-        // if username is not long enough
-        if(username.length <= 2){
-            return {
-                errors: [{
-                    field: 'username',
-                    message: 'Username must be at least 3 characters long'
-                }]
-            }
-        }
+        // call validation function
+        const errors = validateRegister(email, username, password);
 
-        // if password is not long enough
-        if(password.length <= 3){
-            return {
-                errors: [{
-                    field: 'password',
-                    message: 'Password must be at least 4 characters long'
-                }]
-            }
+        // if any error in validation, return them
+        if(errors) {
+            return { errors: errors };
         }
 
         // hash password using argon 2
@@ -81,6 +73,7 @@ export class UserResolver {
         // create user
         const user = ctx.em.create(User, { 
             username: username, 
+            email: email,
             password: hashedPassword 
         });
 
@@ -89,7 +82,7 @@ export class UserResolver {
             await ctx.em.persistAndFlush(user);
         } catch (error) {
             // if username already exists
-            if(error.code === '23505' || error.detail.includes("already exists")){
+            if(error.code === '23505' || error?.detail?.includes("already exists")){
                 return {
                     errors: [{
                         field: 'username',
@@ -113,18 +106,21 @@ export class UserResolver {
     // and context object from apollo server with orm.em
     @Mutation(() => UserResponse)
     async login(
-        @Arg("username", () => String) username: string,
+        @Arg("usernameOrEmail", () => String) usernameOrEmail: string,
         @Arg("password", () => String) password: string,
         @Ctx() ctx: MyContext
     ): Promise <UserResponse>{
-        // find one user by username
-        const user = await ctx.em.findOne(User, { username: username });
+        // find one user by username or email
+        const user = await ctx.em.findOne(
+            User, 
+            usernameOrEmail.includes('@') ? {email: usernameOrEmail} : { username: usernameOrEmail }
+        );
         // if user not found
         if(!user){
             return {
                 errors: [{
-                    field: 'username',
-                    message: "username doesn't exist"
+                    field: 'usernameOrEmail',
+                    message: "Invalid credentials"
                 }],
             }
         }
@@ -137,7 +133,7 @@ export class UserResolver {
             return {
                 errors: [{
                     field: 'password',
-                    message: "invalid credentials"
+                    message: "Invalid credentials"
                 }],
             };
         }
@@ -173,5 +169,42 @@ export class UserResolver {
             // else return true
             resolve(true);
         }))
+    }
+
+    // Mutation to reset's user password that returns a bool
+    // Takes email
+    // and context object from apollo server with orm.em and req, res
+    @Mutation(() => Boolean)
+    async forgotPassword(
+        @Arg('email') email:string,
+        @Ctx() ctx:MyContext
+    ){
+        // find user in DB with their email
+        const user = await ctx.em.findOne(User, { email });
+
+        // email is not valid
+        if(!user) {
+            // for safety, return true and do nothing
+            return true;
+        }
+
+        // generate unique random token
+        const token = v4();
+
+        // store {prefix+token: user.id} in redis with an expiration date of 3 days 
+        await ctx.redis.set(
+            FORGET_PASSWORD_PREFIX + token, 
+            user.id, 
+            'EX', 
+            1000 * 60 * 60 * 24 *3
+        );
+
+        // send email to their address if it exists with a link and a confirmation code
+        sendEmail(
+            email, 
+            `<a href="http://localhost:3000/change-password/${token}">Reset Password</a>`
+        );
+
+        return true;
     }
 }

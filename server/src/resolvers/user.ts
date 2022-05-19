@@ -227,10 +227,13 @@ export class UserResolver {
             };
         }
 
+        // key = prefix+token
+        const key = FORGET_PASSWORD_PREFIX+token;
+
         // get userId from redis using prefix+token
         // on redis we have: 
-        // userId: prefix+token
-        const userId = await ctx.redis.get(FORGET_PASSWORD_PREFIX+token);
+        // prefix+token: userId
+        const userId = await ctx.redis.get(key);
     
         // if we didn't get a userId back
         if(!userId) {
@@ -263,6 +266,9 @@ export class UserResolver {
 
         // log user in (update session)
         ctx.req.session.userId = user.id;
+
+        // delete key from redis
+        await ctx.redis.del(key);
 
         // return user is successful
         return { user };

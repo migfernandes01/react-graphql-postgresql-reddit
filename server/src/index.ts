@@ -12,7 +12,6 @@ import { PostResolver } from './resolvers/post';
 import { UserResolver } from './resolvers/user';
 import session from "express-session";
 import connectReddis from 'connect-redis';
-import { createClient } from "redis";
 import Redis from 'ioredis';
 import { MyContext } from './types';
 import cors from 'cors';
@@ -35,7 +34,6 @@ const Main = async () => {
     // connect to redis
     const RedisStore = connectReddis(session);
     const redis = new Redis();
-    // redisClient.connect().catch(console.error);
 
     // use cors in every route accepting CORS from localhost:300
     // and accepting credentials

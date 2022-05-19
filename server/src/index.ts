@@ -13,23 +13,29 @@ import { UserResolver } from './resolvers/user';
 import session from "express-session";
 import connectReddis from 'connect-redis';
 import { createClient } from "redis";
+import Redis from 'ioredis';
 import { MyContext } from './types';
 import cors from 'cors';
+// import { User } from './entities/User';
 
 // async main funtion
 const Main = async () => {
+    // delete all users -> in case we need
+    //await orm.em.nativeDelete(User, {});
+    
     // initialize ORM and connect to DB
     const orm = await MikroORM.init(mikroConfig);
+
     // run migrations
     await orm.getMigrator().up();
-
+    
     // create express server
     const app = express();
 
     // connect to redis
     const RedisStore = connectReddis(session);
-    const redisClient = createClient({ legacyMode: true });
-    redisClient.connect().catch(console.error);
+    const redis = new Redis();
+    // redisClient.connect().catch(console.error);
 
     // use cors in every route accepting CORS from localhost:300
     // and accepting credentials
@@ -43,7 +49,7 @@ const Main = async () => {
         session({
             name: COOKIE_NAME,                                                // name of cookie
             store: new RedisStore({                                     // store session using redis
-                client: redisClient as any,  
+                client: redis as any,  
                 disableTouch: true,
             }),    
             saveUninitialized: false,                                   // don't create a session if not needed                  
@@ -71,7 +77,7 @@ const Main = async () => {
         // object accessible by resolvers 
         // we pass orm.em to manage the DB in the resolvers
         // we also pass the request and response
-        context: ({ req, res }): MyContext => ({ em: orm.em, req, res })
+        context: ({ req, res }): MyContext => ({ em: orm.em, req, res, redis })
     });
 
     // start apollo server

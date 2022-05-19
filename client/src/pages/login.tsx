@@ -24,10 +24,10 @@ const Login: React.FC<loginProps> = ({}) => {
     return (
         <Wrapper variant='small'>
             <Formik 
-                initialValues={{username: '', password: ''}}
+                initialValues={{usernameOrEmail: '', password: ''}}
                 onSubmit={ async(values, {setErrors}) =>  {
                     // login using URQL mutation and get response back
-                    const response = await login({username: values.username, password: values.password});
+                    const response = await login({usernameOrEmail: values.usernameOrEmail, password: values.password});
                     // if there is errors
                     if(response.data?.login.errors) {
                         // set errors to what was returned
@@ -42,9 +42,9 @@ const Login: React.FC<loginProps> = ({}) => {
                 {({isSubmitting}) => (
                     <Form>
                         <InputField 
-                            name='username' 
-                            placeholder='Username' 
-                            label='Username'
+                            name='usernameOrEmail' 
+                            placeholder='Username/E-mail' 
+                            label='Username or E-mail'
                         />
                         <Box mt={4}>
                             <InputField 

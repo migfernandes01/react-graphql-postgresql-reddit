@@ -24,10 +24,10 @@ const Register: React.FC<registerProps> = ({}) => {
     return (
         <Wrapper variant='small'>
             <Formik 
-                initialValues={{username: '', password: ''}}
+                initialValues={{email: '', username: '', password: ''}}
                 onSubmit={ async(values, {setErrors}) =>  {
                     // register using URQL mutation and get response back
-                    const response = await register({username: values.username, password: values.password});
+                    const response = await register({email: values.email, username: values.username, password: values.password});
                     // if there is errors
                     if(response.data?.register.errors) {
                         // set errors to what was returned
@@ -42,10 +42,17 @@ const Register: React.FC<registerProps> = ({}) => {
                 {({isSubmitting}) => (
                     <Form>
                         <InputField 
-                            name='username' 
-                            placeholder='Username' 
-                            label='Username'
+                            name='email' 
+                            placeholder='Email' 
+                            label='Email'
                         />
+                        <Box mt={4}>
+                            <InputField 
+                                name='username' 
+                                placeholder='Username' 
+                                label='Username'
+                            />
+                        </Box>
                         <Box mt={4}>
                             <InputField 
                                 name='password' 

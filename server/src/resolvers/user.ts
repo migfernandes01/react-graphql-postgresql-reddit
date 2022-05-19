@@ -207,4 +207,64 @@ export class UserResolver {
 
         return true;
     }
+
+    // Mutation to change user's password that returns a user/error
+    // Takes token and newPassword
+    // and context object from apollo server with orm.em and req, res
+    @Mutation(() => UserResponse)
+    async changePassword(
+        @Arg('token') token:string,
+        @Arg('newPassword') newPassword:string,
+        @Ctx() ctx:MyContext 
+    ): Promise<UserResponse>{
+        // if new password is less than 4 chars long
+        if(newPassword.length <= 3){
+            return {
+                errors: [{
+                    field: 'newPassword',
+                    message: "Password needs to be at least 4 characters long"
+                }],
+            };
+        }
+
+        // get userId from redis using prefix+token
+        // on redis we have: 
+        // userId: prefix+token
+        const userId = await ctx.redis.get(FORGET_PASSWORD_PREFIX+token);
+    
+        // if we didn't get a userId back
+        if(!userId) {
+            return {
+                errors: [{
+                    field: 'token',
+                    message: "Token expired"
+                }],
+            };
+        }
+
+        // get user from DB with their ID
+        const user = await ctx.em.findOne(User, { id: parseInt(userId) });
+
+        // if we didn't get a user back
+        if(!user) {
+            return {
+                errors: [{
+                    field: 'token',
+                    message: "User no longer exists"
+                }],
+            };
+        }
+
+        // new user password = new hashed password
+        user.password = await argon2.hash(newPassword);
+
+        // save user to DB
+        await ctx.em.persistAndFlush(user);
+
+        // log user in (update session)
+        ctx.req.session.userId = user.id;
+
+        // return user is successful
+        return { user };
+    }
 }

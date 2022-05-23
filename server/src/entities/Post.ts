@@ -22,6 +22,18 @@ export class Post extends BaseEntity{
 
     // Field for GQL
     // Column for postgres/TypeORM
+    @Field(() => String)
+    @Column()
+    text!: string;
+
+    // Field for GQL
+    // Column for postgres/TypeORM
+    @Field()
+    @Column({ type: 'int', default: 0 })
+    points!: number;
+
+    // Field for GQL
+    // Column for postgres/TypeORM
     @Field()
     @Column()
     creatorId: number;

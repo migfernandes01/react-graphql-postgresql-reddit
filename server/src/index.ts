@@ -1,8 +1,8 @@
 import 'reflect-metadata';
-import { MikroORM } from '@mikro-orm/core';
+import 'dotenv/config';
+import { createConnection } from 'typeorm';
 import { COOKIE_NAME, __prod__ } from './constants';
 import { Post } from './entities/Post';
-import mikroConfig from './mikro-orm.config';
 import express from 'express';
 import { ApolloServer } from 'apollo-server-express';
 import { ApolloServerPluginLandingPageGraphQLPlayground } from "apollo-server-core";
@@ -15,18 +15,24 @@ import connectReddis from 'connect-redis';
 import Redis from 'ioredis';
 import { MyContext } from './types';
 import cors from 'cors';
+import { User } from './entities/User';
 // import { User } from './entities/User';
 
 // async main funtion
 const Main = async () => {
     // delete all users -> in case we need
     //await orm.em.nativeDelete(User, {});
-    
-    // initialize ORM and connect to DB
-    const orm = await MikroORM.init(mikroConfig);
 
-    // run migrations
-    await orm.getMigrator().up();
+    const conn = await createConnection({
+        type: 'postgres',                           // type of db
+        database: 'reddit3',                        // name of db
+        username: 'postgres',                       // username (db's admin)
+        password: process.env.POSTGRESQL_PASSWORD,  // password (db's admin)
+        port: 5433,                                 // port DB is running on
+        logging: true,                              // log errors
+        synchronize: true,                          // synchronize, no need to run migrations
+        entities: [User, Post],                     // DB entities/tables
+    });
     
     // create express server
     const app = express();
@@ -75,7 +81,7 @@ const Main = async () => {
         // object accessible by resolvers 
         // we pass orm.em to manage the DB in the resolvers
         // we also pass the request and response
-        context: ({ req, res }): MyContext => ({ em: orm.em, req, res, redis })
+        context: ({ req, res }): MyContext => ({ req, res, redis })
     });
 
     // start apollo server
@@ -88,13 +94,6 @@ const Main = async () => {
     app.listen(4000, () => {
         console.log('LISTENING ON PORT 4000');
     })
-
-    // run sql
-
-    /* const post = orm.em.create(Post, { title: "My first post" });
-    await orm.em.persistAndFlush(post); */
-    const posts = await orm.em.find(Post, {});
-    console.log(posts);
 };
 
 Main().catch(err => {

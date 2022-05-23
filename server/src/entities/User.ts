@@ -1,43 +1,44 @@
-// User entity (SQL Table) using mikro-orm
-import { Entity, PrimaryKey, Property } from '@mikro-orm/core';
+// User entity (SQL Table) using TypeORM
+
 import { ObjectType, Field, Int } from 'type-graphql';
+import { BaseEntity, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 // GraphQL object type and postgres entity
 @ObjectType()
 @Entity()
-export class User {
+export class User extends BaseEntity{
     // Field for GQL
-    // Primary key for postgres
+    // PrimaryGeneratedColumn postgres/TypeORM
     @Field(() => Int)
-    @PrimaryKey()
+    @PrimaryGeneratedColumn()
     id!: number;
 
     // Field for GQL
-    // Property for postgres
+    // CreateDateColumn for postgres/TypeOrm
     @Field(() => String)
-    @Property({ type:'date' })
-    createdAt = new Date();
+    @CreateDateColumn()
+    createdAt:Date;
 
     // Field for GQL
-    // Property for postgres
+    // UpdateDateColumn for postgres/TypeORM
     @Field(() => String)
-    @Property({ type:'date', onUpdate: () => new Date() })
-    updatedAt = new Date();
+    @UpdateDateColumn()
+    updatedAt:Date;
 
     // Field for GQL
-    // Property for postgres (unique field)
+    // Column for postgres/TypeORM (unique field)
     @Field()
-    @Property({ type: 'text', unique: true })
+    @Column({ unique: true })
     username!: string;
 
     // Field for GQL
-    // Property for postgres (unique field)
+    // Column for postgres/TypeORM (unique field)
     @Field()
-    @Property({ type: 'text', unique: true })
+    @Column({ unique: true })
     email!: string;
 
     // Field for GQL is not here, because we don't want to expose this field to GQL
-    // Property for postgres
-    @Property({ type: 'text' })
+    // Column for postgres/TypeORM
+    @Column()
     password!: string;
 }

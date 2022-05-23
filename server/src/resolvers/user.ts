@@ -6,6 +6,7 @@ import { COOKIE_NAME, FORGET_PASSWORD_PREFIX } from '../constants';
 import { validateRegister } from '../utils/validateRegister';
 import { sendEmail } from '../utils/sendEmail';
 import { v4 } from 'uuid';
+import { getConnection } from 'typeorm';
 
 // Object type for an error with a field
 @ObjectType()
@@ -45,14 +46,14 @@ export class UserResolver {
         }
 
         // fetch user with the user id stored in session
-        const user = await ctx.em.findOne(User, { id: ctx.req.session.userId });
+        const user = await User.findOne({ where: { id:  ctx.req.session.userId } });
         // return user
         return { user };
     }
 
     // Mutation to register user
     // Takes username and password
-    // and context object from apollo server with orm.em
+    // and context object from apollo server with
     @Mutation(() => UserResponse)
     async register(
         @Arg("username", () => String) username: string,
@@ -70,16 +71,19 @@ export class UserResolver {
 
         // hash password using argon 2
         const hashedPassword = await argon2.hash(password);
-        // create user
-        const user = ctx.em.create(User, { 
-            username: username, 
-            email: email,
-            password: hashedPassword 
-        });
+    
+        let user;
 
         try {
-            // save user to DB
-            await ctx.em.persistAndFlush(user);
+            // get typeorm connection and create a query to insert new data into user
+            const result = await getConnection().createQueryBuilder().insert().into(User).values(
+                {username: username, email: email, password: hashedPassword}
+            )
+            .returning('*')
+            .execute();
+            
+            // set user to result
+            user = result.raw;
         } catch (error) {
             // if username already exists
             if(error.code === '23505' || error?.detail?.includes("already exists")){
@@ -103,7 +107,7 @@ export class UserResolver {
 
     // Mutation to log user in
     // Takes ousername and password 
-    // and context object from apollo server with orm.em
+    // and context object from apollo server with
     @Mutation(() => UserResponse)
     async login(
         @Arg("usernameOrEmail", () => String) usernameOrEmail: string,
@@ -111,10 +115,11 @@ export class UserResolver {
         @Ctx() ctx: MyContext
     ): Promise <UserResponse>{
         // find one user by username or email
-        const user = await ctx.em.findOne(
-            User, 
-            usernameOrEmail.includes('@') ? {email: usernameOrEmail} : { username: usernameOrEmail }
-        );
+        const user = await User.findOne(
+            usernameOrEmail.includes('@') 
+            ? { where: { email: usernameOrEmail } }
+            : { where: { username: usernameOrEmail } }     
+        )
         // if user not found
         if(!user){
             return {
@@ -173,14 +178,14 @@ export class UserResolver {
 
     // Mutation to reset's user password that returns a bool
     // Takes email
-    // and context object from apollo server with orm.em and req, res
+    // and context object from apollo server with req, res
     @Mutation(() => Boolean)
     async forgotPassword(
         @Arg('email') email:string,
         @Ctx() ctx:MyContext
     ){
         // find user in DB with their email
-        const user = await ctx.em.findOne(User, { email });
+        const user = await User.findOne({ where: { email: email } });
 
         // email is not valid
         if(!user) {
@@ -210,7 +215,7 @@ export class UserResolver {
 
     // Mutation to change user's password that returns a user/error
     // Takes token and newPassword
-    // and context object from apollo server with orm.em and req, res
+    // and context object from apollo server with req, res
     @Mutation(() => UserResponse)
     async changePassword(
         @Arg('token') token:string,
@@ -245,8 +250,11 @@ export class UserResolver {
             };
         }
 
+        // parse userId to int
+        const userIdNum = parseInt(userId);
+
         // get user from DB with their ID
-        const user = await ctx.em.findOne(User, { id: parseInt(userId) });
+        const user = await User.findOne({ where: { id: userIdNum } });
 
         // if we didn't get a user back
         if(!user) {
@@ -258,11 +266,8 @@ export class UserResolver {
             };
         }
 
-        // new user password = new hashed password
-        user.password = await argon2.hash(newPassword);
-
-        // save user to DB
-        await ctx.em.persistAndFlush(user);
+        // update user's password
+        await User.update({ id: userIdNum }, { password: await argon2.hash(newPassword) });
 
         // log user in (update session)
         ctx.req.session.userId = user.id;

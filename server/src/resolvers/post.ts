@@ -1,82 +1,66 @@
 import { Post } from '../entities/Post';
-import { MyContext } from '../types';
-import { Resolver, Query, Mutation, Ctx, Arg, Int } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, Int } from 'type-graphql';
 
 // Resolver class with either mutations or queries
 @Resolver()
 export class PostResolver {
 
     // query that returns array of posts
-    // gets context object that contains orm.em
     @Query(() => [Post])
-    posts(
-        @Ctx() ctx: MyContext
-    ): Promise<Post[]> {
-        return ctx.em.find(Post, {});
+    posts(): Promise<Post[]> {
+        // find all posts
+        return Post.find();
     }
 
     // query that returns post
-    // takes an id as an argument and context object containing orm.em
+    // takes an id as an argument
     @Query(() => Post, {nullable: true})
     post(
-        @Arg('id', () => Int) id: number,
-        @Ctx() ctx: MyContext
+        @Arg('id', () => Int) id: number
     ): Promise<Post | null> {
-        return ctx.em.findOne(Post, { id: id });
+        // find post by id
+        return Post.findOne({ where: { id: id } });
     }
 
     // mutation to create post
-    // takes a title arg and uses context object containing orm.em
+    // takes a title as an argument
     @Mutation(() => Post)
     async createPost(
         @Arg("title", () => String) title: string,
-        @Ctx() ctx: MyContext
     ): Promise<Post | null> {
-        // create Post with orm passing title
-        const post = ctx.em.create(Post, { title: title });
-        // save post to DB
-        await ctx.em.persistAndFlush(post);
-        // return created post
-        return post;
+        // create a Post passing a title and save it to DB
+        return Post.create({title}).save();
     }
 
     // mutation to update post
-    // takes an id and title arg and uses context object containing orm.em
+    // takes an id and title arg
     @Mutation(() => Post)
     async updatePost(
         @Arg("id", () => Int) id: number,
-        @Arg("title", () => String) title: string,
-        @Ctx() ctx: MyContext
+        @Arg("title", () => String) title: string
     ): Promise<Post | null> {
         // find post to update
-        const post = await ctx.em.findOne(Post, { id })
+        const post = await Post.findOne({ where: { id } })
         // if post is not found
         if(!post) {
             return null;
         }
         // if title is not undefined
         if(typeof title !== 'undefined'){
-            // set title to new updated title
-            post.title = title;
-            // save new post to DB
-            await ctx.em.persistAndFlush(post);
+            // update post with id of id and new title
+            Post.update({id}, {title});
         }
         return post;     
     }
 
     // Mutation to delete post
-    // takes an id arg and uses context object containing orm.em
+    // takes an id arg 
     @Mutation(() => Boolean)
     async deletePost(
-        @Arg("id") id:number,
-        @Ctx() ctx: MyContext
+        @Arg("id") id:number
     ): Promise<boolean>{
-        try {
-            // delete Post with id passed through args
-            await ctx.em.nativeDelete(Post, { id })
-        } catch {
-            return false   
-        }   
+        // delet post with id
+        await Post.delete(id);
         return true;
     }
 }

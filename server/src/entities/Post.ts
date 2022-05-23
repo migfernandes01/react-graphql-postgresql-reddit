@@ -1,32 +1,33 @@
-// Post entity (SQL Table) using mikro-orm
-import { Entity, PrimaryKey, Property } from '@mikro-orm/core';
-import { ObjectType, Field, Int } from 'type-graphql';
+// Post entity (SQL Table) using TypeORM
 
-// GraphQL object type and postgres entity
+import { ObjectType, Field, Int } from 'type-graphql';
+import { BaseEntity, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+
+// GraphQL object type and postgres/TypeORM entity
 @ObjectType()
 @Entity()
-export class Post {
+export class Post extends BaseEntity{
     // Field for GQL
-    // Primary key for postgres
+    // PrimaryGeneratedColumn for postgres/TypeORM
     @Field(() => Int)
-    @PrimaryKey()
+    @PrimaryGeneratedColumn()
     id!: number;
 
     // Field for GQL
-    // Property for postgres
+    // CreateDateColumn for postgres/TypeORM
     @Field(() => String)
-    @Property({ type:'date' })
-    createdAt = new Date();
+    @CreateDateColumn()
+    createdAt:Date;
 
     // Field for GQL
-    // Property for postgres
+    // UpdateDateColumn for postgres/TypeORM
     @Field(() => String)
-    @Property({ type:'date', onUpdate: () => new Date() })
-    updatedAt = new Date();
+    @UpdateDateColumn()
+    updatedAt:Date;
 
     // Field for GQL
-    // Property for postgres
-    @Field()
-    @Property({ type: 'text' })
+    // Column for postgres/TypeORM
+    @Field(() => String)
+    @Column()
     title!: string;
 }

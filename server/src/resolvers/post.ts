@@ -1,5 +1,17 @@
 import { Post } from '../entities/Post';
-import { Resolver, Query, Mutation, Arg, Int } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, Int, InputType, Field, Ctx, UseMiddleware } from 'type-graphql';
+import { MyContext } from '../types';
+import { isAuth } from '../middleware/isAuth';
+
+// input type with 2 field
+// for user input creating a post
+@InputType()
+class PostInput {
+    @Field()
+    title: string
+    @Field()
+    text: string
+}
 
 // Resolver class with either mutations or queries
 @Resolver()
@@ -24,12 +36,19 @@ export class PostResolver {
 
     // mutation to create post
     // takes a title as an argument
+    // use isAuth middleware before running resolver to check if user is authenticated
     @Mutation(() => Post)
+    @UseMiddleware(isAuth)
     async createPost(
-        @Arg("title", () => String) title: string,
+        @Arg("input") input: PostInput,
+        @Ctx() ctx: MyContext
     ): Promise<Post | null> {
-        // create a Post passing a title and save it to DB
-        return Post.create({title}).save();
+        // create a Post passing the input (input type with 2 fields) 
+        // and save it to DB
+        return Post.create({
+            ...input,
+            creatorId: ctx.req.session.userId
+        }).save();
     }
 
     // mutation to update post

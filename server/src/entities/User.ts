@@ -1,7 +1,8 @@
 // User entity (SQL Table) using TypeORM
 
 import { ObjectType, Field, Int } from 'type-graphql';
-import { BaseEntity, Column, CreateDateColumn, Entity, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { BaseEntity, Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Post } from './Post';
 
 // GraphQL object type and postgres entity
 @ObjectType()
@@ -12,18 +13,6 @@ export class User extends BaseEntity{
     @Field(() => Int)
     @PrimaryGeneratedColumn()
     id!: number;
-
-    // Field for GQL
-    // CreateDateColumn for postgres/TypeOrm
-    @Field(() => String)
-    @CreateDateColumn()
-    createdAt:Date;
-
-    // Field for GQL
-    // UpdateDateColumn for postgres/TypeORM
-    @Field(() => String)
-    @UpdateDateColumn()
-    updatedAt:Date;
 
     // Field for GQL
     // Column for postgres/TypeORM (unique field)
@@ -41,4 +30,21 @@ export class User extends BaseEntity{
     // Column for postgres/TypeORM
     @Column()
     password!: string;
+
+    // one to many relationship
+    // one user can have many posts
+    @OneToMany(() => Post, post => post.creator)
+    posts: Post[];
+
+    // Field for GQL
+    // CreateDateColumn for postgres/TypeOrm
+    @Field(() => String)
+    @CreateDateColumn()
+    createdAt:Date;
+
+    // Field for GQL
+    // UpdateDateColumn for postgres/TypeORM
+    @Field(() => String)
+    @UpdateDateColumn()
+    updatedAt:Date;
 }

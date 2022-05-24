@@ -1,5 +1,5 @@
 // InputField reusable component
-import { FormControl, FormLabel, Input, FormErrorMessage } from '@chakra-ui/react';
+import { FormControl, FormLabel, Input, FormErrorMessage, Textarea, ComponentWithAs } from '@chakra-ui/react';
 import { useField } from 'formik';
 import React, { InputHTMLAttributes } from 'react'
 
@@ -10,6 +10,7 @@ type InputFieldProps = InputHTMLAttributes<HTMLInputElement> & {
     label: string,
     placeholder: string,
     type?: string,
+    textarea?: boolean,
 };
 
 // error:
@@ -19,11 +20,17 @@ type InputFieldProps = InputHTMLAttributes<HTMLInputElement> & {
 export const InputField: React.FC<InputFieldProps> = (props) => {
     // Formik hook -> to get properties for a field (name, onChange, value, onBlur...)
     // get error, if there's any
+    let Component: ComponentWithAs<"input"> = Input;
+    if(props.textarea){
+        Component = Textarea;
+    }
+
     const [field, {error}] = useField(props);
+
     return (
         <FormControl isInvalid={!!error}>
             <FormLabel htmlFor={field.name}>{props.label}</FormLabel>
-            <Input {...field} type={props.type} id={field.name} placeholder={props.placeholder} />
+            <Component {...field} type={props.type} id={field.name} placeholder={props.placeholder} />
             {error ? <FormErrorMessage>{error}</FormErrorMessage> : null}
         </FormControl>
     );

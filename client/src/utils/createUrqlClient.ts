@@ -1,6 +1,21 @@
 import { Cache, QueryInput, cacheExchange } from "@urql/exchange-graphcache";
-import { dedupExchange, fetchExchange } from "urql";
+import { dedupExchange, fetchExchange, Exchange } from "urql";
 import { LogoutMutation, MeQuery, MeDocument, LoginMutation, RegisterMutation } from "../generated/graphql";
+import { pipe, tap } from "wonka";
+import Router from 'next/router';
+
+// execute this before any mutation/query
+const errorExchange: Exchange = ({ forward }) => (ops$) => {
+  return pipe(
+    forward(ops$),
+    tap(({ error }) => {
+      // check if an error message includes "not authenticated"
+      if(error?.message.includes("not authenticated")){
+        Router.replace('/login');
+      }
+    })
+  )
+}
 
 // helper function to run a query after a mutation
 // <MutationRan, QueryToRun>
@@ -78,6 +93,7 @@ export const createUrqlClient = (ssrExchange: any) => ({
         }
       }
     }),
+    errorExchange,
     ssrExchange,
     fetchExchange
     ],

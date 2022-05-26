@@ -12,7 +12,7 @@ export const useIsAuth = () => {
     // when the component is rendered
     useEffect(() => {
         // if user is not logged in
-        if(!fetching && !data?.me.user?.id){
+        if(!fetching && !data?.me?.user?.id){
             // redirect user to /login with a next param as router.pathname 
             // (where user was originally trying to go)
             router.replace("/login?next=" + router.pathname);

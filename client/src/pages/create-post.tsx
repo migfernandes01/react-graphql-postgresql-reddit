@@ -10,23 +10,17 @@ import { Wrapper } from '../components/Wrapper';
 import { useCreatePostMutation, useMeQuery } from '../generated/graphql';
 import { createUrqlClient } from '../utils/createUrqlClient';
 import { toErrorMap } from '../utils/toErrorMap';
+import { useIsAuth } from '../utils/useIsAuth';
 
 const CreatePost: React.FC<{}> = ({}) => {
-    // use me query
-    const [{ data, fetching }] = useMeQuery();
 
     // use create post mutation hook
     const [, createPost] = useCreatePostMutation();
 
     const router = useRouter();
 
-    // when the component is rendered
-    useEffect(() => {
-        // if user is not logged in
-        if(!fetching && !data?.me.user?.id){
-            router.replace("/login");
-        }
-    }, [data, router])
+    // custom query that checks if user is logged in
+    useIsAuth();
 
     return (
         <Layout variant='small'>

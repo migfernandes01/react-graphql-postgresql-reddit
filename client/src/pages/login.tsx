@@ -35,8 +35,15 @@ const Login: React.FC<loginProps> = ({}) => {
                         setErrors(toErrorMap(response.data.login.errors))
                     } else if(response.data?.login.user) {
                         // user registered successfully
-                        // push him to /
-                        router.push('/');
+                        // if there is a next query param
+                        if(typeof router.query.next === "string"){
+                            // push him there
+                            router.push(router.query.next);
+                        } else {
+                            // othwise, push to /
+                            router.push('/');
+                        }
+                        
                     }
                 }}
             >

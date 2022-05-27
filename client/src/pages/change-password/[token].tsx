@@ -13,9 +13,11 @@ import Link from 'next/link';
 
 // Change password component
 // Next page type containing a token as parameter
-export const ChangePassword: NextPage<{token: string}> = ({ token }) => {
+export const ChangePassword: NextPage = () => {
     // next router
     const router = useRouter();
+
+    console.log(router.query);
 
     // change password mutation hook
     const [, changePassword] = useChangePasswordMutation();
@@ -29,7 +31,9 @@ export const ChangePassword: NextPage<{token: string}> = ({ token }) => {
                 initialValues={{ newPassword: '' }}
                 onSubmit={ async(values, {setErrors}) =>  {
                     // changePassword using URQL mutation and get response back
-                    const response = await changePassword({token: token, newPassword: values.newPassword});
+                    const response = await changePassword({
+                        token: typeof router.query.token === "string" ? router.query.token : "", 
+                        newPassword: values.newPassword});
                     // if there is errors
                     if(response.data?.changePassword.errors) {
                         // map errors
@@ -73,14 +77,6 @@ export const ChangePassword: NextPage<{token: string}> = ({ token }) => {
         </Wrapper>
     );
 };
-
-// get token from query and return is as a string field 'token'
-// send it to the component
-ChangePassword.getInitialProps = ({ query }) => {
-    return {
-        token: query.token as string
-    };
-}
 
 // use urql client to call mutation
 export default withUrqlClient(createUrqlClient)(ChangePassword);

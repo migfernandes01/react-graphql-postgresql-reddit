@@ -8,7 +8,11 @@ import Link from 'next/link';
 
 const Index = () => {
   // hook for posts query
-  const [{data}] = usePostsQuery();
+  const [{data}] = usePostsQuery({
+    variables: {
+      limit: 10
+    } 
+  });
 
   return (
     <Layout>

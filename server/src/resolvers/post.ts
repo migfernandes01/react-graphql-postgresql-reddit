@@ -21,7 +21,7 @@ export class PostResolver {
     // query that returns array of posts
     @Query(() => [Post])
     posts(
-        @Arg('limit') limit: number,                                            // limit of posts to fetch
+        @Arg('limit', () => Int) limit: number,                                            // limit of posts to fetch
         @Arg('cursor', () => String, { nullable: true }) cursor: string | null  // cursor pointing to current post
     ): Promise<Post[]> {
         // if limit passed > 50, we keep it as 50

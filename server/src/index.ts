@@ -16,6 +16,7 @@ import Redis from 'ioredis';
 import { MyContext } from './types';
 import cors from 'cors';
 import { User } from './entities/User';
+import path from 'path';
 // import { User } from './entities/User';
 
 // async main funtion
@@ -24,15 +25,18 @@ const Main = async () => {
     //await orm.em.nativeDelete(User, {});
 
     const conn = await createConnection({
-        type: 'postgres',                           // type of db
-        database: 'reddit3',                        // name of db
-        username: 'postgres',                       // username (db's admin)
-        password: process.env.POSTGRESQL_PASSWORD,  // password (db's admin)
-        port: 5433,                                 // port DB is running on
-        logging: true,                              // log errors
-        synchronize: true,                          // synchronize, no need to run migrations
-        entities: [User, Post],                     // DB entities/tables
+        type: 'postgres',                                       // type of db
+        database: 'reddit3',                                    // name of db
+        username: 'postgres',                                   // username (db's admin)
+        password: process.env.POSTGRESQL_PASSWORD,              // password (db's admin)
+        port: 5433,                                             // port DB is running on
+        logging: true,                                          // log errors
+        synchronize: true,                                      // synchronize, no need to run migrations
+        migrations: [path.join(__dirname, './migrations/*')],   // migrations directory
+        entities: [User, Post],                                 // DB entities/tables
     });
+
+    // conn.runMigrations();
     
     // create express server
     const app = express();

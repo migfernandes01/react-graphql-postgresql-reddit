@@ -2,6 +2,7 @@ import { Post } from '../entities/Post';
 import { Resolver, Query, Mutation, Arg, Int, InputType, Field, Ctx, UseMiddleware } from 'type-graphql';
 import { MyContext } from '../types';
 import { isAuth } from '../middleware/isAuth';
+import { getConnection } from 'typeorm';
 
 // input type with 2 field
 // for user input creating a post
@@ -19,9 +20,29 @@ export class PostResolver {
 
     // query that returns array of posts
     @Query(() => [Post])
-    posts(): Promise<Post[]> {
-        // find all posts
-        return Post.find();
+    posts(
+        @Arg('limit') limit: number,                                            // limit of posts to fetch
+        @Arg('cursor', () => String, { nullable: true }) cursor: string | null  // cursor pointing to current post
+    ): Promise<Post[]> {
+        // if limit passed > 50, we keep it as 50
+        const realLimit = Math.min(50, limit);
+
+        // create query builder 
+        const qb = getConnection()
+            .getRepository(Post)                        // name of entity
+            .createQueryBuilder("p")                    // Alias
+                             
+            .orderBy('"createdAt"', 'DESC')             // order by descendant of 'createdAt' field
+            .take(realLimit)                            // limit amount of Posts fetched
+        
+        // if we have a cursor, add a where condition
+        // get posts older from cursor post
+        if(cursor){
+            qb.where('"createdAt" < :cursor', { cursor: new Date(parseInt(cursor)) }) // where   
+        }
+
+        // return result of query 
+        return qb.getMany();
     }
 
     // query that returns post

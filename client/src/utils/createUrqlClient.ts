@@ -1,5 +1,5 @@
-import { Cache, QueryInput, cacheExchange } from "@urql/exchange-graphcache";
-import { dedupExchange, fetchExchange, Exchange } from "urql";
+import { Cache, QueryInput, cacheExchange, Resolver } from "@urql/exchange-graphcache";
+import { dedupExchange, fetchExchange, Exchange, stringifyVariables } from "urql";
 import { LogoutMutation, MeQuery, MeDocument, LoginMutation, RegisterMutation } from "../generated/graphql";
 import { pipe, tap } from "wonka";
 import Router from 'next/router';
@@ -16,6 +16,87 @@ const errorExchange: Exchange = ({ forward }) => (ops$) => {
     })
   )
 }
+
+export type MergeMode = 'before' | 'after';
+
+export const cursorPagination = (): Resolver => {
+  return (_parent, fieldArgs, cache, info) => {
+    const { parentKey: entityKey, fieldName } = info;
+
+    // get all fields for queries in cache
+    const allFields = cache.inspectFields(entityKey);
+    const fieldInfos = allFields.filter(info => info.fieldName === fieldName);
+    const size = fieldInfos.length;
+    // return undefined if no data
+    if (size === 0) {
+      return undefined;
+    }
+
+    // get data from cache and store it/return it
+    const fieldKey = `${fieldName}(${stringifyVariables(fieldArgs)})`
+    const isItInCache = cache.resolveFieldByKey(entityKey, fieldKey)
+    info.partial = !isItInCache;
+    const results: string[] = []; 
+    fieldInfos.forEach(fi => {
+      const data = cache.resolveFieldByKey(entityKey, fi.fieldKey) as string[];
+      results.push(...data);
+    })
+    
+    return results;
+
+    /* const visited = new Set();
+    let result: NullArray<string> = [];
+    let prevOffset: number | null = null;
+
+    for (let i = 0; i < size; i++) {
+      const { fieldKey, arguments: args } = fieldInfos[i];
+      if (args === null || !compareArgs(fieldArgs, args)) {
+        continue;
+      }
+
+      const links = cache.resolve(entityKey, fieldKey) as string[];
+      const currentOffset = args[cursorArgument];
+
+      if (
+        links === null ||
+        links.length === 0 ||
+        typeof currentOffset !== 'number'
+      ) {
+        continue;
+      }
+
+      const tempResult: NullArray<string> = [];
+
+      for (let j = 0; j < links.length; j++) {
+        const link = links[j];
+        if (visited.has(link)) continue;
+        tempResult.push(link);
+        visited.add(link);
+      }
+
+      if (
+        (!prevOffset || currentOffset > prevOffset) ===
+        (mergeMode === 'after')
+      ) {
+        result = [...result, ...tempResult];
+      } else {
+        result = [...tempResult, ...result];
+      }
+
+      prevOffset = currentOffset;
+    }
+
+    const hasCurrentPage = cache.resolve(entityKey, fieldName, fieldArgs);
+    if (hasCurrentPage) {
+      return result;
+    } else if (!(info as any).store.schema) {
+      return undefined;
+    } else {
+      info.partial = true;
+      return result;
+    } */
+  };
+};
 
 // helper function to run a query after a mutation
 // <MutationRan, QueryToRun>
@@ -35,6 +116,11 @@ export const createUrqlClient = (ssrExchange: any) => ({
       credentials: "include" as const,          // make this field const for TS
     },
     exchanges: [dedupExchange, cacheExchange({  // add graphcache to urql client
+      resolvers: {
+        Query: {
+          posts: cursorPagination(),
+        },
+      },
       updates: {
         // run functions after executing certain mutations
         Mutation: {

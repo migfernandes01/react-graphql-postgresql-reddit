@@ -1,5 +1,5 @@
 import { Post } from '../entities/Post';
-import { Resolver, Query, Mutation, Arg, Int, InputType, Field, Ctx, UseMiddleware, FieldResolver, Root } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, Int, InputType, Field, Ctx, UseMiddleware, FieldResolver, Root, ObjectType } from 'type-graphql';
 import { MyContext } from '../types';
 import { isAuth } from '../middleware/isAuth';
 import { getConnection } from 'typeorm';
@@ -12,6 +12,16 @@ class PostInput {
     title: string
     @Field()
     text: string
+}
+
+// new object type with list of posts
+// and a boolean "hasMore"
+@ObjectType()
+class PaginatedPosts {
+    @Field(() => [Post])
+    posts: Post[]
+    @Field()
+    hasMore: boolean
 }
 
 // Resolver class with either mutations or queries for Post
@@ -28,13 +38,15 @@ export class PostResolver {
     }
 
     // query that returns array of posts
-    @Query(() => [Post])
-    posts(
+    @Query(() => PaginatedPosts)
+    async posts(
         @Arg('limit', () => Int) limit: number,                                            // limit of posts to fetch
         @Arg('cursor', () => String, { nullable: true }) cursor: string | null  // cursor pointing to current post
-    ): Promise<Post[]> {
+    ): Promise<PaginatedPosts> {
         // if limit passed > 50, we keep it as 50
         const realLimit = Math.min(50, limit);
+        // realLimit + 1
+        const realLimitPlusOne = realLimit + 1
 
         // create query builder 
         const qb = getConnection()
@@ -42,7 +54,7 @@ export class PostResolver {
             .createQueryBuilder("p")                    // Alias
                              
             .orderBy('"createdAt"', 'DESC')             // order by descendant of 'createdAt' field
-            .take(realLimit)                            // limit amount of Posts fetched
+            .take(realLimitPlusOne)                     // limit amount of Posts fetched (limit +1)
         
         // if we have a cursor, add a where condition
         // get posts older from cursor post
@@ -50,8 +62,15 @@ export class PostResolver {
             qb.where('"createdAt" < :cursor', { cursor: new Date(parseInt(cursor)) }) // where   
         }
 
-        // return result of query 
-        return qb.getMany();
+        // posts = resut of query
+        const posts = await qb.getMany();
+
+        // return posts and hasMore is true IF length of posts
+        // returned by query === realLimit(limit + 1)
+        return { 
+            posts: posts.slice(0, realLimit), 
+            hasMore: posts.length === realLimitPlusOne 
+        };
     }
 
     // query that returns post

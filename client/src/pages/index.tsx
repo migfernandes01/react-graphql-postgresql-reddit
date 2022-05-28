@@ -3,27 +3,57 @@ import { Layout } from "../components/Layout";
 import { NavBar } from "../components/NavBar";
 import { usePostsQuery } from "../generated/graphql";
 import { createUrqlClient } from "../utils/createUrqlClient";
-import {Link as ChakraLink} from '@chakra-ui/react';
+import {Box, Heading, Text, Link as ChakraLink, Stack, Flex, Button} from '@chakra-ui/react';
 import Link from 'next/link';
+import { useState } from "react";
 
 const Index = () => {
+  // state for variables to pass in query to get posts
+  const [variables, setVariables] = useState({ limit: 10, cursor: null as null | string });
+
   // hook for posts query
-  const [{data}] = usePostsQuery({
-    variables: {
-      limit: 10
-    } 
+  const [{ data, fetching }] = usePostsQuery({
+    variables: variables
   });
+
+  // not loading, no data
+  if(!fetching && !data){
+    return <div>No posts yet...</div>
+  }
 
   return (
     <Layout>
-      <Link href="/create-post">
-        <ChakraLink>Create Post</ChakraLink>
-      </Link>
-      <div color="white">Hello world</div>
-      <br />
-      {!data ? <p>Loading...</p> : data.posts.map((post) => (
-        <div key={post.id}>{post.title}</div>
-      ))}
+      <Flex>
+        <Heading>Reddit</Heading>
+        <Link href="/create-post">
+          <ChakraLink ml='auto'>Create Post</ChakraLink>
+        </Link>
+      </Flex>
+      <br/>
+      {fetching && !data ? (
+        <p>Loading...</p>
+      ) : (
+        <Stack spacing={8}>
+          {data!.posts.map((post) => (
+            <Box key={post.id} p={5} shadow='md' borderWidth='1px'>
+              <Heading fontSize='xl'>{post.title}</Heading>
+              <Text mt={4}>{post.textSnippet}...</Text>
+            </Box>
+          ))}
+        </Stack>
+      )}
+      {data && (
+        <Flex>
+          <Button 
+            isLoading={fetching} 
+            m='auto' 
+            my={8} 
+            onClick={ () => setVariables({ limit: variables.limit, cursor: data.posts[data.posts.length - 1].createdAt })}
+          >
+            Load More
+          </Button>
+        </Flex>)
+      }
     </Layout>
   );
   

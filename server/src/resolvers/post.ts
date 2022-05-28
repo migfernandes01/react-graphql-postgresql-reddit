@@ -1,5 +1,5 @@
 import { Post } from '../entities/Post';
-import { Resolver, Query, Mutation, Arg, Int, InputType, Field, Ctx, UseMiddleware } from 'type-graphql';
+import { Resolver, Query, Mutation, Arg, Int, InputType, Field, Ctx, UseMiddleware, FieldResolver, Root } from 'type-graphql';
 import { MyContext } from '../types';
 import { isAuth } from '../middleware/isAuth';
 import { getConnection } from 'typeorm';
@@ -14,9 +14,18 @@ class PostInput {
     text: string
 }
 
-// Resolver class with either mutations or queries
-@Resolver()
+// Resolver class with either mutations or queries for Post
+@Resolver(Post)
 export class PostResolver {
+    // Field resolver that return a 
+    // snippet of a post text property
+    @FieldResolver(() => String)
+    textSnippet(
+        @Root() root: Post  // root -> Post
+    ) {
+        // return first 50 characters of text
+        return root.text.slice(0, 50);
+    }
 
     // query that returns array of posts
     @Query(() => [Post])

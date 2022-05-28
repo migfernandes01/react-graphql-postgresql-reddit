@@ -36,7 +36,8 @@ const Main = async () => {
         entities: [User, Post],                                 // DB entities/tables
     });
 
-    // conn.runMigrations();
+    conn.runMigrations();
+    // await Post.delete({})
     
     // create express server
     const app = express();

@@ -1,4 +1,4 @@
-import { Resolver, ObjectType, Query, Field, Mutation, Arg, Ctx } from 'type-graphql';
+import { Resolver, ObjectType, Query, Field, Mutation, Arg, Ctx, FieldResolver, Root } from 'type-graphql';
 import { MyContext } from '../types';
 import { User } from '../entities/User';
 import argon2 from 'argon2';
@@ -28,8 +28,23 @@ class UserResponse {
 }
 
 // Resolver class with either mutations or queries
-@Resolver()
+@Resolver(User)
 export class UserResolver {
+    // firld resolver to return email conditionally
+    @FieldResolver(() => String)
+    email(
+        @Root() user: User,
+        @Ctx() ctx:MyContext
+    ){ 
+        // this is the current user and it is ok to show them their own email
+        if(ctx.req.session.userId === user.id) {
+            return user.email;
+        }
+
+        // current user wants to see someone else's email
+        return "";
+    }
+
     // Query to check if user is logged in or not 
     // (through session stored)
     @Query(() => UserResponse)

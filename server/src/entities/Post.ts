@@ -38,8 +38,10 @@ export class Post extends BaseEntity{
     @Column()
     creatorId: number;
 
+    // Field for GQL
     // many to one relationship
     // sets up foreign key and stores it into creatorId column
+    @Field()
     @ManyToOne(() => User, user => user.posts)
     creator: User;
 

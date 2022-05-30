@@ -46,24 +46,61 @@ export class PostResolver {
         // if limit passed > 50, we keep it as 50
         const realLimit = Math.min(50, limit);
         // realLimit + 1
-        const realLimitPlusOne = realLimit + 1
+        const realLimitPlusOne = realLimit + 1;
 
-        // create query builder 
+        // SQL replacement starts with realLimitPlusOne
+        const replacements: any[] = [realLimitPlusOne];
+
+        // if we have a cursor, add cursor date to replacesments array
+        if(cursor) {
+            replacements.push(new Date(parseInt(cursor)))
+        }
+
+        // RAW SQL Query
+        // Join creator with posts in a creator field
+        // if we have a cursor, get posts older than that
+        // order by the newest first
+        // get a limit of realLimitPlusOne
+        const posts = await getConnection().query(`
+            select p.*,
+            json_build_object(
+                'id', u.id,
+                'username', u.username,
+                'email', u.email,
+                'createdAt', u."createdAt",
+                'updatedAt', u."updatedAt"
+            ) creator
+            from post p
+            inner join public.user u on u.id = p."creatorId"
+            ${cursor ? `where p."createdAt" < $2` : ''}
+            order by p."createdAt" DESC
+            limit $1
+        `, replacements);
+
+        //console.log(posts);
+
+        // SAME:
+
+        /* // create query builder 
         const qb = getConnection()
             .getRepository(Post)                        // name of entity
             .createQueryBuilder("p")                    // Alias
-                             
-            .orderBy('"createdAt"', 'DESC')             // order by descendant of 'createdAt' field
+            .innerJoinAndSelect(                        // JOIN creator 
+                "p.creator",
+                "u",
+                'u.id = p."creatorId"'
+            )
+            .orderBy('p."createdAt"', 'DESC')             // order by descendant of 'createdAt' field
             .take(realLimitPlusOne)                     // limit amount of Posts fetched (limit +1)
         
         // if we have a cursor, add a where condition
         // get posts older from cursor post
         if(cursor){
-            qb.where('"createdAt" < :cursor', { cursor: new Date(parseInt(cursor)) }) // where   
+            qb.where('p."createdAt" < :cursor', { cursor: new Date(parseInt(cursor)) }) // where   
         }
 
         // posts = resut of query
-        const posts = await qb.getMany();
+        const posts = await qb.getMany(); */
 
         // return posts and hasMore is true IF length of posts
         // returned by query === realLimit(limit + 1)

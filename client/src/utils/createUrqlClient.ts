@@ -137,6 +137,16 @@ export const createUrqlClient = (ssrExchange: any) => ({
       updates: {
         // run functions after executing certain mutations
         Mutation: {
+          // run this when createPost mutation executes
+          createPost: (_result, args, cache, info) => {
+            // loop over ALL paginated data
+            const allFields = cache.inspectFields("Query");
+            const fieldInfos = allFields.filter((info) => info.fieldName === "posts");
+            fieldInfos.forEach((fi) => {
+              // invalidate posts query (execute it again passing variables)
+              cache.invalidate("Query", "posts", fi.arguments || {})
+            })
+          },
           // run this when logout mutation executes
           logout: (_result, args, cache, info) => {
             // return user as null after Logout Mutation

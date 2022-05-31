@@ -3,6 +3,7 @@ import { Resolver, Query, Mutation, Arg, Int, InputType, Field, Ctx, UseMiddlewa
 import { MyContext } from '../types';
 import { isAuth } from '../middleware/isAuth';
 import { getConnection } from 'typeorm';
+import { Updoot } from '../entities/Updoot';
 
 // input type with 2 field
 // for user input creating a post
@@ -166,6 +167,52 @@ export class PostResolver {
     ): Promise<boolean>{
         // delet post with id
         await Post.delete(id);
+        return true;
+    }
+
+    // Mutation to vote on a post
+    // takes a post id
+    // gets the context
+    // returns a bool
+    // passes through auth validation middleware
+    @Mutation(() => Boolean)
+    @UseMiddleware(isAuth)
+    async vote(
+        @Arg('postId', () => Int) postId: number,
+        @Arg('value') value: number,
+        @Ctx() ctx: MyContext
+    ) {
+        // get userId based on our session
+        const { userId } = ctx.req.session;
+
+        // if value !== -1, it's an upvote
+        const isUpVote = value !== -1;
+
+        // if isUpVote, voteValue = 1, else voteValue = -1
+        const voteValue = isUpVote ? 1 : -1; 
+
+        /*// insert updoot
+        await Updoot.insert({
+            userId: userId,
+            postId: postId,
+            value: voteValue
+        });*/
+
+        // insert into updoot AND
+        // update points of post p.id = postId to points + voteValue(1 or -1)
+        await getConnection().query(`
+            START TRANSACTION;
+
+            insert into updoot ("userId", "postId", value)
+            values (${userId}, ${postId}, ${voteValue});
+
+            update post
+            set points = points + ${voteValue}
+            where id = ${postId};
+
+            COMMIT;
+        `);
+
         return true;
     }
 }

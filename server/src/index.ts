@@ -17,6 +17,7 @@ import { MyContext } from './types';
 import cors from 'cors';
 import { User } from './entities/User';
 import path from 'path';
+import { Updoot } from './entities/Updoot';
 // import { User } from './entities/User';
 
 // async main funtion
@@ -33,7 +34,7 @@ const Main = async () => {
         logging: true,                                          // log errors
         synchronize: true,                                      // synchronize, no need to run migrations
         migrations: [path.join(__dirname, './migrations/*')],   // migrations directory
-        entities: [User, Post],                                 // DB entities/tables
+        entities: [User, Post, Updoot],                                 // DB entities/tables
     });
 
     conn.runMigrations();

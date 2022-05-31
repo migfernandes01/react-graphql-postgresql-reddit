@@ -1,7 +1,8 @@
 // Post entity (SQL Table) using TypeORM
 
 import { ObjectType, Field, Int } from 'type-graphql';
-import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { BaseEntity, Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Updoot } from './Updoot';
 import { User } from './User';
 
 // GraphQL object type and postgres/TypeORM entity
@@ -44,6 +45,11 @@ export class Post extends BaseEntity{
     @Field()
     @ManyToOne(() => User, user => user.posts)
     creator: User;
+
+    // one to many relationship
+    // one post can have many updoots
+    @OneToMany(() => Updoot, updoot => updoot.post)
+    updoots: Updoot[];
 
     // Field for GQL
     // CreateDateColumn for postgres/TypeORM

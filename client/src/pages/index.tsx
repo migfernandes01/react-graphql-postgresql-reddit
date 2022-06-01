@@ -3,9 +3,10 @@ import { Layout } from "../components/Layout";
 import { NavBar } from "../components/NavBar";
 import { usePostsQuery } from "../generated/graphql";
 import { createUrqlClient } from "../utils/createUrqlClient";
-import {Box, Heading, Text, Link as ChakraLink, Stack, Flex, Button} from '@chakra-ui/react';
+import { Box, Heading, Text, Link as ChakraLink, Stack, Flex, Button } from '@chakra-ui/react';
 import Link from 'next/link';
 import { useState } from "react";
+import { PostVote } from "../components/PostVote";
 
 const Index = () => {
   // state for variables to pass in query to get posts
@@ -35,11 +36,14 @@ const Index = () => {
       ) : (
         <Stack spacing={8}>
           {data!.posts.posts.map((post) => (
-            <Box key={post.id} p={5} shadow='md' borderWidth='1px'>
-              <Heading fontSize='xl'>{post.title}</Heading>
-              <Text>Posted by {post.creator.username}</Text>
-              <Text mt={4}>{post.textSnippet}...</Text>
-            </Box>
+            <Flex key={post.id} p={5} shadow='md' borderWidth='1px'>
+              <PostVote post={post}/>
+              <Box>
+                <Heading fontSize='xl'>{post.title}</Heading>
+                <Text>Posted by {post.creator.username}</Text>
+                <Text mt={4}>{post.textSnippet}...</Text>
+              </Box>
+            </Flex>
           ))}
         </Stack>
       )}

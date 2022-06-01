@@ -179,7 +179,7 @@ export class PostResolver {
     @UseMiddleware(isAuth)
     async vote(
         @Arg('postId', () => Int) postId: number,
-        @Arg('value') value: number,
+        @Arg('value', () => Int) value: number,
         @Ctx() ctx: MyContext
     ) {
         // get userId based on our session

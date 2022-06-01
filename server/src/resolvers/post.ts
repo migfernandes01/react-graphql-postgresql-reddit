@@ -185,33 +185,56 @@ export class PostResolver {
         // get userId based on our session
         const { userId } = ctx.req.session;
 
+        // find updoot based on postId and userId
+        const updoot = await Updoot.findOne({ where: {postId: postId, userId: userId} });
+
         // if value !== -1, it's an upvote
         const isUpVote = value !== -1;
 
         // if isUpVote, voteValue = 1, else voteValue = -1
         const voteValue = isUpVote ? 1 : -1; 
 
-        /*// insert updoot
-        await Updoot.insert({
-            userId: userId,
-            postId: postId,
-            value: voteValue
-        });*/
+        // the user has voted on the post before && 
+        // changing from up to down or down to up
+        if (updoot && updoot.value !== voteValue) {
+            // start transaction and add queries to queue
+            await getConnection().transaction(async tm => {
+                // update value of updoot for postId and userId
+                await tm.query(`
+                    update updoot
+                    set value = $1
+                    where "postId" = $2 and "userId" = $3
+                `, [voteValue, postId, userId]);
 
-        // insert into updoot AND
-        // update points of post p.id = postId to points + voteValue(1 or -1)
-        await getConnection().query(`
-            START TRANSACTION;
+                // update points on post with id of postId
+                // points = points + (2 * voteValue)
+                // either points = points + 2 OR points = points + (-2)
+                await tm.query(`
+                    update post
+                    set points = points + $1
+                    where id = $2;
+                `, [2 * voteValue, postId]);
+            })
 
-            insert into updoot ("userId", "postId", value)
-            values (${userId}, ${postId}, ${voteValue});
+        } else if(!updoot) {
+            // has never voted on this post before
 
-            update post
-            set points = points + ${voteValue}
-            where id = ${postId};
+            // start transaction and add queries to queue
+            await getConnection().transaction(async tm => {
+                // insert userId, postId and voteValue into updoot
+                await tm.query(`
+                    insert into updoot ("userId", "postId", value)
+                    values ($1, $2, $3)
+                `, [userId, postId, voteValue]);
 
-            COMMIT;
-        `);
+                // update points on post with id of postId
+                await tm.query(`
+                    update post
+                    set points = points + $1
+                    where id = $2;
+                `, [voteValue, postId]);
+            })
+        }
 
         return true;
     }

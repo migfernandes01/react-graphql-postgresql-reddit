@@ -1,8 +1,10 @@
 import { Cache, QueryInput, cacheExchange, Resolver } from "@urql/exchange-graphcache";
 import { dedupExchange, fetchExchange, Exchange, stringifyVariables } from "urql";
-import { LogoutMutation, MeQuery, MeDocument, LoginMutation, RegisterMutation } from "../generated/graphql";
+import { LogoutMutation, MeQuery, MeDocument, LoginMutation, RegisterMutation, VoteMutationVariables } from "../generated/graphql";
 import { pipe, tap } from "wonka";
 import Router from 'next/router';
+import gql from 'graphql-tag';
+import { isServer } from "./isServer";
 
 // execute this before any mutation/query
 const errorExchange: Exchange = ({ forward }) => (ops$) => {
@@ -120,10 +122,20 @@ function betterUpdateQuery<Result, Query> (
 }
 
 // create URQL client with url of graphql server, cache options for mutations and SSR
-export const createUrqlClient = (ssrExchange: any) => ({
+export const createUrqlClient = (ssrExchange: any, ctx: any) => {
+  // set cookie to value of cookie in request headers
+  let cookie = '';
+
+  if(isServer()){
+    cookie = ctx.req.headers.cookie;
+  }
+  return {
     url: 'http://localhost:4000/graphql',
     fetchOptions: {
       credentials: "include" as const,          // make this field const for TS
+      headers: cookie ? {                       // if we have a cookie, send it as a fetch option
+        cookie
+      } : undefined
     },
     exchanges: [dedupExchange, cacheExchange({  // add graphcache to urql client
       keys: {
@@ -137,6 +149,47 @@ export const createUrqlClient = (ssrExchange: any) => ({
       updates: {
         // run functions after executing certain mutations
         Mutation: {
+          // run this when vote mutation executes
+          vote: (_result, args, cache, info) => {
+            // get postId and value from mutation args
+            const { postId, value } = args as VoteMutationVariables;
+
+            // get id and points for post with id of postId from cache
+            const data: any = cache.readFragment(
+              gql`
+                fragment _ on Post {
+                  id
+                  points
+                  voteStatus
+                }
+              `,
+              { id: postId }
+            );
+
+            // if we got data back
+            if (data) {
+              // do nothing if post was upvoted and user is trying to upvote
+              // OR if post was downvoted and user is trying to downvote
+              if(data.voteStatus === args.value) {
+                return;
+              }
+
+              // increment OR decrement post points
+              // do it *2 if user is changing voteStatus
+              const newPoints = (data.points as number) + (!data.voteStatus ? 1 : 2 ) * value;
+
+              // write to cache the new points and voteStatus by postId
+              cache.writeFragment(
+                gql`
+                  fragment _ on Post {
+                    points
+                    voteStatus
+                  }
+                `,
+                { id: postId, points: newPoints, voteStatus: value }
+              )
+            }
+          },
           // run this when createPost mutation executes
           createPost: (_result, args, cache, info) => {
             // loop over ALL paginated data
@@ -206,4 +259,5 @@ export const createUrqlClient = (ssrExchange: any) => ({
     ssrExchange,
     fetchExchange
     ],
-});
+  }
+};

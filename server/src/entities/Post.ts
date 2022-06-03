@@ -34,6 +34,11 @@ export class Post extends BaseEntity{
     points!: number;
 
     // Field for GQL
+    // not storing this field in DB
+    @Field(() => Int, { nullable: true })
+    voteStatus: number | null;  // 1, -1 or null
+
+    // Field for GQL
     // Column for postgres/TypeORM
     @Field()
     @Column()

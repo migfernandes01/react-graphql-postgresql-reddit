@@ -21,23 +21,33 @@ export const PostVote: React.FC<PostVoteProps> = ({ post }) => {
             <IconButton 
                 aria-label='up-vote post'
                 onClick={async () => {
+                    // if post was already upvoted, do nothing
+                    if(post.voteStatus === 1) {
+                        return
+                    }
                     setLoadingState('updoot-loading')
                     await vote({postId: post.id, value: 1})
                     setLoadingState('not-loading')
                 }}
                 isLoading={loadingState==='updoot-loading'}
                 icon={<ChevronUpIcon />}
+                colorScheme={post.voteStatus === 1 ? 'green' : undefined}
             />
             {post.points}
             <IconButton 
                 aria-label='down-vote post'
                 onClick={async () => {
+                    // if post was already downvoted, do nothing
+                    if(post.voteStatus === -1) {
+                        return
+                    }
                     setLoadingState('downdoot-loading')
                     await vote({postId: post.id, value: -1})
                     setLoadingState('not-loading')
                 }}
                 isLoading={loadingState==='downdoot-loading'}
                 icon={<ChevronDownIcon />}
+                colorScheme={post.voteStatus === -1 ? 'red' : undefined}
             />
         </Flex>
     );

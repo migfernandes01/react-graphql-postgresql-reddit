@@ -41,20 +41,31 @@ export class PostResolver {
     // query that returns array of posts
     @Query(() => PaginatedPosts)
     async posts(
-        @Arg('limit', () => Int) limit: number,                                            // limit of posts to fetch
-        @Arg('cursor', () => String, { nullable: true }) cursor: string | null  // cursor pointing to current post
+        @Arg('limit', () => Int) limit: number,                                             // limit of posts to fetch
+        @Arg('cursor', () => String, { nullable: true }) cursor: string | null,             // cursor pointing to current post
+        @Ctx() ctx: MyContext                                                               // Context
     ): Promise<PaginatedPosts> {
         // if limit passed > 50, we keep it as 50
         const realLimit = Math.min(50, limit);
         // realLimit + 1
         const realLimitPlusOne = realLimit + 1;
 
-        // SQL replacement starts with realLimitPlusOne
+        // SQL replacement starts with realLimitPlusOne and current userId
         const replacements: any[] = [realLimitPlusOne];
+
+        if(ctx.req.session.userId) {
+            replacements.push(ctx.req.session.userId);
+        }
+
+        // cursor index in replacements is 3 by default
+        let cursorIndex = 3;
 
         // if we have a cursor, add cursor date to replacesments array
         if(cursor) {
-            replacements.push(new Date(parseInt(cursor)))
+            
+            replacements.push(new Date(parseInt(cursor)));
+            // cursor index in replacements = length of replacements
+            cursorIndex = replacements.length;
         }
 
         // RAW SQL Query
@@ -62,6 +73,7 @@ export class PostResolver {
         // if we have a cursor, get posts older than that
         // order by the newest first
         // get a limit of realLimitPlusOne
+        // subquery to get voteStatus field conditionally
         const posts = await getConnection().query(`
             select p.*,
             json_build_object(
@@ -70,10 +82,11 @@ export class PostResolver {
                 'email', u.email,
                 'createdAt', u."createdAt",
                 'updatedAt', u."updatedAt"
-            ) creator
+            ) creator,
+            ${ctx.req.session.userId ? '(select value from updoot where "userId" = $2 and "postId" = p.id ) "voteStatus"' : 'null as "voteStatus"'}
             from post p
             inner join public.user u on u.id = p."creatorId"
-            ${cursor ? `where p."createdAt" < $2` : ''}
+            ${cursor ? `where p."createdAt" < $${cursorIndex}` : ''}
             order by p."createdAt" DESC
             limit $1
         `, replacements);

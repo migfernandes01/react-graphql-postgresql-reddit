@@ -131,7 +131,8 @@ export class PostResolver {
         @Arg('id', () => Int) id: number
     ): Promise<Post | null> {
         // find post by id
-        return Post.findOne({ where: { id: id } });
+        // join creator in returned object
+        return Post.findOne({ where: { id: id }, relations: ["creator"] });
     }
 
     // mutation to create post

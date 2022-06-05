@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Button, Flex, Link as ChakraLink } from '@chakra-ui/react';
+import { Box, Button, Flex, Heading, Link as ChakraLink } from '@chakra-ui/react';
 import Link from 'next/link';
 import { useLogoutMutation, useMeQuery } from '../generated/graphql';
 import { isServer } from '../utils/isServer';
@@ -25,17 +25,20 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
     } else if (!data?.me?.user){  // user not logged in
         body = (
             <>
-            <Link href='/login'>
-                <ChakraLink mr={2}>Login</ChakraLink>
-            </Link>
-            <Link href='/register'>
-                <ChakraLink>Register</ChakraLink>
-            </Link>
+                <Link href='/login'>
+                    <ChakraLink mr={2}>Login</ChakraLink>
+                </Link>
+                <Link href='/register'>
+                    <ChakraLink>Register</ChakraLink>
+                </Link>
             </>
         );
     } else {                // user IS logged in
         body = (
             <Flex>
+                <Link href="/create-post">
+                    <ChakraLink mr={2}>Create Post</ChakraLink>
+                </Link>
                 <Box mr={4}>{data.me.user?.username}</Box>
                 {/*<Link href={'/'}>*/}        
                     <Button 
@@ -52,7 +55,12 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
     }
 
     return (
-        <Flex zIndex={1} position='sticky' top={0} bg="tomato" p={4}>
+        <Flex zIndex={1} position='sticky' top={0} bg="tomato" p={4} align='center'>
+            <Link href='/'>
+                <ChakraLink>
+                    <Heading>Reddit</Heading>
+                </ChakraLink>
+            </Link>
             <Box ml='auto' color={'white'}>
                 {body}
             </Box>

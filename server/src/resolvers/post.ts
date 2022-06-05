@@ -174,13 +174,18 @@ export class PostResolver {
     }
 
     // Mutation to delete post
-    // takes an id arg 
+    // takes an id arg and context object
+    // pass through auth middleware before executing mutation
     @Mutation(() => Boolean)
+    @UseMiddleware(isAuth)
     async deletePost(
-        @Arg("id") id:number
+        @Arg("id", () => Int) id:number,
+        @Ctx() ctx: MyContext 
     ): Promise<boolean>{
-        // delet post with id
-        await Post.delete(id);
+        // delete post with postId from Updoot entity
+        await Updoot.delete({ postId: id });
+        // delet post with id AND creatorId (from req.session) from Post entity
+        await Post.delete({ id: id, creatorId: ctx.req.session.userId });
         return true;
     }
 

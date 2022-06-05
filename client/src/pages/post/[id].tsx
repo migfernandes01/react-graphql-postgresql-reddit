@@ -5,30 +5,11 @@ import { useRouter } from 'next/router';
 import { usePostQuery } from '../../generated/graphql';
 import { Layout } from '../../components/Layout';
 import { Heading } from '@chakra-ui/react';
+import { useGetPostFromUrl } from '../../utils/useGetPostFromUrl';
 
 const Post: React.FC = ({}) => {
-    // initialize router
-    const router = useRouter();
-
-    // parse id from query to int or set it to -1 if any error
-    const intId = typeof router.query.id === 'string' ? parseInt(router.query.id) : -1;
-
-    // execute post query passing the id from query (get data and fetching back)
-    const [{ data, error, fetching }] = usePostQuery({
-        pause: intId === -1,    // pause query if id === -1
-        variables: {
-            id: intId 
-        }
-    })
-
-    // if query data is being fetched:
-    if(fetching) {
-        return (
-            <Layout>
-                <div>Loading...</div>
-            </Layout>
-        );
-    }
+    // execute custom hook to get post from id in url
+    const [{ data, error, fetching }] = useGetPostFromUrl();
 
     // if error:
     if(error) {
@@ -47,8 +28,6 @@ const Post: React.FC = ({}) => {
             </Layout>
         );
     }
-
-    console.log('post data', data);
 
     return (
         <Layout>

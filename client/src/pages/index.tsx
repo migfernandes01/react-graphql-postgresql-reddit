@@ -32,7 +32,7 @@ const Index = () => {
         <p>Loading...</p>
       ) : (
         <Stack spacing={8}>
-          {data!.posts.posts.map((post) => (
+          {data!.posts.posts.map((post) => !post ? null : (
             <Flex key={post.id} p={5} shadow='md' borderWidth='1px'>
               <PostVote post={post}/>
               <Box flex={1}>

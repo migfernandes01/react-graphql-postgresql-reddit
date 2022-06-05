@@ -47,7 +47,8 @@ export class Updoot extends BaseEntity{
     // Field for GQL
     // many to one relationship
     // sets up foreign key and stores it into userId column
+    // delete post data in Updoot entity when Post gets deleted on Post entity
     @Field(() => Post)
-    @ManyToOne(() => Post, post => post.updoots)
+    @ManyToOne(() => Post, post => post.updoots, { onDelete: 'CASCADE' })
     post: Post;
 }

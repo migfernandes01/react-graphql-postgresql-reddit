@@ -153,24 +153,35 @@ export class PostResolver {
     }
 
     // mutation to update post
-    // takes an id and title arg
+    // passing through an authentication middleware
+    // takes an id title and text arg
     @Mutation(() => Post)
+    @UseMiddleware(isAuth)
     async updatePost(
         @Arg("id", () => Int) id: number,
-        @Arg("title", () => String) title: string
+        @Arg("title") title: string,
+        @Arg("text") text: string,
+        @Ctx() ctx: MyContext
     ): Promise<Post | null> {
-        // find post to update
-        const post = await Post.findOne({ where: { id } })
-        // if post is not found
-        if(!post) {
-            return null;
-        }
-        // if title is not undefined
-        if(typeof title !== 'undefined'){
-            // update post with id of id and new title
-            Post.update({id}, {title});
-        }
-        return post;     
+        // use query builder to run update query
+        const post = await getConnection()
+            .createQueryBuilder()
+            .update(Post)                                       // update Post
+            .set({ title: title, text: text })                  // set title and text
+            .where('id = :id and "creatorId" = :creatorId', {   // using id and creatorId 
+                id, 
+                creatorId: ctx.req.session.userId 
+            })
+            .returning('*')                                     // returning all fields
+            .execute();
+
+        // post.raw is an array containing the updated posts 
+
+        // return raw property of query in postion 0
+        return post.raw[0];
+
+        // update title and text of post with id of id and creatorId = id of logged user
+        // return Post.update({ id, creatorId: ctx.req.session.userId }, { title, text });  
     }
 
     // Mutation to delete post

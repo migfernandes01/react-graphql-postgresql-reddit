@@ -182,10 +182,29 @@ export class PostResolver {
         @Arg("id", () => Int) id:number,
         @Ctx() ctx: MyContext 
     ): Promise<boolean>{
+        // find post to delete
+        const post = await Post.findOne({ where: { id: id } });
+
+        // if we couldn't find the post with that id, return false
+        if(!post) {
+            return false;
+        }
+
+        // if post was not created by the user that is trying to delete it
+        if(post.creatorId !== ctx.req.session.userId){
+            throw new Error('Not Authorized');
+        }
+
+        // without CASCADING
         // delete post with postId from Updoot entity
-        await Updoot.delete({ postId: id });
+        // await Updoot.delete({ postId: id });
+
+        // With CASCADING:
+        // Post gets deleted in Post entity and in Updoot entity
         // delet post with id AND creatorId (from req.session) from Post entity
         await Post.delete({ id: id, creatorId: ctx.req.session.userId });
+
+        // return true if everything goes well
         return true;
     }
 

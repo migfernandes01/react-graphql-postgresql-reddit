@@ -7,7 +7,7 @@ import { Box, Heading, Text, Link as ChakraLink, Stack, Flex, Button, IconButton
 import Link from 'next/link';
 import { useState } from "react";
 import { PostVote } from "../components/PostVote";
-import { DeleteIcon } from "@chakra-ui/icons";
+import { DeleteIcon, EditIcon } from "@chakra-ui/icons";
 
 const Index = () => {
   // state for variables to pass in query to get posts
@@ -44,14 +44,23 @@ const Index = () => {
                 <Text>Posted by {post.creator.username}</Text>
                 <Flex>
                   <Text flex={1} mt={4}>{post.textSnippet}...</Text>
-                  <IconButton 
-                    colorScheme='red' 
-                    aria-label="Delete Post" 
-                    icon={<DeleteIcon />}
-                    onClick={() => {
-                      deletePost({ id: post.id })
-                    }}
-                  />
+                  <Box ml='auto'>
+                    <Link href='/post/edit/[id]' as={`/post/edit/${post.id}`}>
+                        <IconButton   
+                          as={ChakraLink}             
+                          aria-label="Edit Post" 
+                          icon={<EditIcon />}
+                          mr={2}
+                        />
+                    </Link>
+                    <IconButton 
+                      aria-label="Delete Post" 
+                      icon={<DeleteIcon />}
+                      onClick={() => {
+                        deletePost({ id: post.id })
+                      }}
+                    />
+                  </Box>
                 </Flex>
               </Box>
             </Flex>

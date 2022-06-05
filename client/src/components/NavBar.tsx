@@ -35,9 +35,9 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
         );
     } else {                // user IS logged in
         body = (
-            <Flex>
+            <Flex align='center'>
                 <Link href="/create-post">
-                    <ChakraLink mr={2}>Create Post</ChakraLink>
+                    <Button colorScheme='facebook' as={ChakraLink} mr={4}>Create Post</Button>
                 </Link>
                 <Box mr={4}>{data.me.user?.username}</Box>
                 {/*<Link href={'/'}>*/}        
@@ -55,15 +55,17 @@ export const NavBar: React.FC<NavBarProps> = ({}) => {
     }
 
     return (
-        <Flex zIndex={1} position='sticky' top={0} bg="tomato" p={4} align='center'>
-            <Link href='/'>
-                <ChakraLink>
-                    <Heading>Reddit</Heading>
-                </ChakraLink>
-            </Link>
-            <Box ml='auto' color={'white'}>
-                {body}
-            </Box>
+        <Flex zIndex={1} position='sticky' top={0} bg="tomato" p={4}>
+            <Flex flex={1} m='auto' align='center' maxW={800}>
+                <Link href='/'>
+                    <ChakraLink>
+                        <Heading>Reddit</Heading>
+                    </ChakraLink>
+                </Link>
+                <Box ml='auto' color={'white'}>
+                    {body}
+                </Box>
+            </Flex>
         </Flex>
     );
 };

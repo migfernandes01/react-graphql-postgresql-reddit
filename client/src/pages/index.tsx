@@ -13,13 +13,18 @@ const Index = () => {
   const [variables, setVariables] = useState({ limit: 10, cursor: null as null | string });
 
   // hook for posts query
-  const [{ data, fetching }] = usePostsQuery({
+  const [{ data, error, fetching }] = usePostsQuery({
     variables: variables
   });
 
   // not loading, no data
   if(!fetching && !data){
-    return <div>No posts yet...</div>
+    return (
+      <div>
+        <h5>No posts yet... </h5>
+        <p>{error?.message}</p>
+      </div>
+    );
   }
 
   return (

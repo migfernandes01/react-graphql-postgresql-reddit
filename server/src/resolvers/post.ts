@@ -4,6 +4,7 @@ import { MyContext } from '../types';
 import { isAuth } from '../middleware/isAuth';
 import { getConnection } from 'typeorm';
 import { Updoot } from '../entities/Updoot';
+import { User } from 'src/entities/User';
 
 // input type with 2 field
 // for user input creating a post
@@ -28,7 +29,7 @@ class PaginatedPosts {
 // Resolver class with either mutations or queries for Post
 @Resolver(Post)
 export class PostResolver {
-    // Field resolver that return a 
+    // Field resolver that returns a 
     // snippet of a post text property
     @FieldResolver(() => String)
     textSnippet(
@@ -36,6 +37,16 @@ export class PostResolver {
     ) {
         // return first 50 characters of text
         return root.text.slice(0, 50);
+    }
+
+    // Field resolver that returns a 
+    // post creator
+    @FieldResolver(() => User)
+    creator(
+        @Root() post: Post  // root -> Post
+    ) {
+        // use using posts' creatorId
+        return User.findOne(post.creatorId as any);
     }
 
     // query that returns array of posts

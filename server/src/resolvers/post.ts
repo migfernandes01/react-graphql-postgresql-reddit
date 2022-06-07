@@ -40,7 +40,7 @@ export class PostResolver {
     }
 
     // Field resolver that returns a 
-    // post creator
+    // post creator for each post
     @FieldResolver(() => User)
     creator(
         @Root() post: Post,     // post 
@@ -49,6 +49,25 @@ export class PostResolver {
         // return object containing a User when calling
         // load method of userLoader with the creatorId on Post
         return ctx.userLoader.load(post.creatorId);
+    }
+
+    // Field resolver that returns a 
+    // votaStatus for each post/logged in user
+    @FieldResolver(() => Int, { nullable: true })
+    async voteStatus(
+        @Root() post: Post,     // post 
+        @Ctx() ctx: MyContext   // context containing userLoader
+    ) {
+        // if no user is logged in
+        if(!ctx.req.session.userId){
+            return null;
+        }
+
+        // call updoot loader with postId and current user
+        const updoot = await ctx.updootLoader.load({postId: post.id, userId: ctx.req.session.userId})
+        
+        // if we got an updoot from loader, return updoot.value otherwise return null
+        return updoot ? updoot.value : null;
     }
 
     // query that returns array of posts
@@ -66,31 +85,20 @@ export class PostResolver {
         // SQL replacement starts with realLimitPlusOne and current userId
         const replacements: any[] = [realLimitPlusOne];
 
-        if(ctx.req.session.userId) {
-            replacements.push(ctx.req.session.userId);
-        }
-
-        // cursor index in replacements is 3 by default
-        let cursorIndex = 3;
 
         // if we have a cursor, add cursor date to replacesments array
         if(cursor) {
-            
             replacements.push(new Date(parseInt(cursor)));
-            // cursor index in replacements = length of replacements
-            cursorIndex = replacements.length;
         }
 
         // RAW SQL Query
         // if we have a cursor, get posts older than that
         // order by the newest first
         // get a limit of realLimitPlusOne
-        // subquery to get voteStatus field conditionally
         const posts = await getConnection().query(`
-            select p.*,
-            ${ctx.req.session.userId ? '(select value from updoot where "userId" = $2 and "postId" = p.id ) "voteStatus"' : 'null as "voteStatus"'}
+            select p.*
             from post p
-            ${cursor ? `where p."createdAt" < $${cursorIndex}` : ''}
+            ${cursor ? `where p."createdAt" < $2` : ''}
             order by p."createdAt" DESC
             limit $1
         `, replacements);

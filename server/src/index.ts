@@ -18,6 +18,7 @@ import cors from 'cors';
 import { User } from './entities/User';
 import path from 'path';
 import { Updoot } from './entities/Updoot';
+import { createUserLoader } from './utils/createUserLoader';
 // import { User } from './entities/User';
 
 // async main funtion
@@ -87,7 +88,9 @@ const Main = async () => {
         // object accessible by resolvers 
         // we pass orm.em to manage the DB in the resolvers
         // we also pass the request and response
-        context: ({ req, res }): MyContext => ({ req, res, redis })
+        // we also pass the redis instance 
+        // and userLoader(calls createUserLoader)
+        context: ({ req, res }): MyContext => ({ req, res, redis, userLoader: createUserLoader() })
     });
 
     // start apollo server

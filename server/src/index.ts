@@ -19,6 +19,7 @@ import { User } from './entities/User';
 import path from 'path';
 import { Updoot } from './entities/Updoot';
 import { createUserLoader } from './utils/createUserLoader';
+import { createUpdootLoader } from './utils/createUpdootLoader';
 // import { User } from './entities/User';
 
 // async main funtion
@@ -90,7 +91,13 @@ const Main = async () => {
         // we also pass the request and response
         // we also pass the redis instance 
         // and userLoader(calls createUserLoader)
-        context: ({ req, res }): MyContext => ({ req, res, redis, userLoader: createUserLoader() })
+        context: ({ req, res }): MyContext => ({ 
+            req, 
+            res, 
+            redis, 
+            userLoader: createUserLoader(), 
+            updootLoader: createUpdootLoader(),
+        })
     });
 
     // start apollo server

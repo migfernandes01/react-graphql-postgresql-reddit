@@ -4,7 +4,7 @@ import { MyContext } from '../types';
 import { isAuth } from '../middleware/isAuth';
 import { getConnection } from 'typeorm';
 import { Updoot } from '../entities/Updoot';
-import { User } from 'src/entities/User';
+import { User } from '../entities/User';
 
 // input type with 2 field
 // for user input creating a post
@@ -43,10 +43,12 @@ export class PostResolver {
     // post creator
     @FieldResolver(() => User)
     creator(
-        @Root() post: Post  // root -> Post
+        @Root() post: Post,     // post 
+        @Ctx() ctx: MyContext   // context containing userLoader
     ) {
-        // use using posts' creatorId
-        return User.findOne(post.creatorId as any);
+        // return object containing a User when calling
+        // load method of userLoader with the creatorId on Post
+        return ctx.userLoader.load(post.creatorId);
     }
 
     // query that returns array of posts
@@ -80,23 +82,14 @@ export class PostResolver {
         }
 
         // RAW SQL Query
-        // Join creator with posts in a creator field
         // if we have a cursor, get posts older than that
         // order by the newest first
         // get a limit of realLimitPlusOne
         // subquery to get voteStatus field conditionally
         const posts = await getConnection().query(`
             select p.*,
-            json_build_object(
-                'id', u.id,
-                'username', u.username,
-                'email', u.email,
-                'createdAt', u."createdAt",
-                'updatedAt', u."updatedAt"
-            ) creator,
             ${ctx.req.session.userId ? '(select value from updoot where "userId" = $2 and "postId" = p.id ) "voteStatus"' : 'null as "voteStatus"'}
             from post p
-            inner join public.user u on u.id = p."creatorId"
             ${cursor ? `where p."createdAt" < $${cursorIndex}` : ''}
             order by p."createdAt" DESC
             limit $1
@@ -142,8 +135,7 @@ export class PostResolver {
         @Arg('id', () => Int) id: number
     ): Promise<Post | null> {
         // find post by id
-        // join creator in returned object
-        return Post.findOne({ where: { id: id }, relations: ["creator"] });
+        return Post.findOne({ where: { id: id } });
     }
 
     // mutation to create post

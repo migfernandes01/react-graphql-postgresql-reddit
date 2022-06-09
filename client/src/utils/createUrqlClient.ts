@@ -55,58 +55,6 @@ export const cursorPagination = (): Resolver => {
       hasMore: hasMore,
       posts: results
     };
-
-    /* const visited = new Set();
-    let result: NullArray<string> = [];
-    let prevOffset: number | null = null;
-
-    for (let i = 0; i < size; i++) {
-      const { fieldKey, arguments: args } = fieldInfos[i];
-      if (args === null || !compareArgs(fieldArgs, args)) {
-        continue;
-      }
-
-      const links = cache.resolve(entityKey, fieldKey) as string[];
-      const currentOffset = args[cursorArgument];
-
-      if (
-        links === null ||
-        links.length === 0 ||
-        typeof currentOffset !== 'number'
-      ) {
-        continue;
-      }
-
-      const tempResult: NullArray<string> = [];
-
-      for (let j = 0; j < links.length; j++) {
-        const link = links[j];
-        if (visited.has(link)) continue;
-        tempResult.push(link);
-        visited.add(link);
-      }
-
-      if (
-        (!prevOffset || currentOffset > prevOffset) ===
-        (mergeMode === 'after')
-      ) {
-        result = [...result, ...tempResult];
-      } else {
-        result = [...tempResult, ...result];
-      }
-
-      prevOffset = currentOffset;
-    }
-
-    const hasCurrentPage = cache.resolve(entityKey, fieldName, fieldArgs);
-    if (hasCurrentPage) {
-      return result;
-    } else if (!(info as any).store.schema) {
-      return undefined;
-    } else {
-      info.partial = true;
-      return result;
-    } */
   };
 };
 
@@ -119,6 +67,17 @@ function betterUpdateQuery<Result, Query> (
     fn: (r: Result, q: Query) => any
   ){
     return cache.updateQuery(qi, data => fn(result, data as any) as any)
+}
+
+// function that invalidates all posts in cache
+const invalidateAllPosts = (cache: Cache) => {
+  // loop over ALL paginated data
+  const allFields = cache.inspectFields("Query");
+  const fieldInfos = allFields.filter((info) => info.fieldName === "posts");
+  fieldInfos.forEach((fi) => {
+    // invalidate posts query (execute it again passing variables)
+    cache.invalidate("Query", "posts", fi.arguments || {})
+})
 }
 
 // create URQL client with url of graphql server, cache options for mutations and SSR
@@ -198,13 +157,8 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
           },
           // run this when createPost mutation executes
           createPost: (_result, args, cache, info) => {
-            // loop over ALL paginated data
-            const allFields = cache.inspectFields("Query");
-            const fieldInfos = allFields.filter((info) => info.fieldName === "posts");
-            fieldInfos.forEach((fi) => {
-              // invalidate posts query (execute it again passing variables)
-              cache.invalidate("Query", "posts", fi.arguments || {})
-            })
+            // call function that invalidates all posts in cache
+            invalidateAllPosts(cache);
           },
           // run this when logout mutation executes
           logout: (_result, args, cache, info) => {
@@ -235,7 +189,9 @@ export const createUrqlClient = (ssrExchange: any, ctx: any) => {
                   };
                 }
               }
-            )
+            );
+            // funtion that invalidates all posts in cache
+            invalidateAllPosts(cache);
           },
           // run this when register mutation executes
           register: (_result, args, cache, info) => { 

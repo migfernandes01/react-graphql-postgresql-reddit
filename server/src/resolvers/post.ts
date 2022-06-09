@@ -75,7 +75,6 @@ export class PostResolver {
     async posts(
         @Arg('limit', () => Int) limit: number,                                             // limit of posts to fetch
         @Arg('cursor', () => String, { nullable: true }) cursor: string | null,             // cursor pointing to current post
-        @Ctx() ctx: MyContext                                                               // Context
     ): Promise<PaginatedPosts> {
         // if limit passed > 50, we keep it as 50
         const realLimit = Math.min(50, limit);

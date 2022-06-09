@@ -1,6 +1,5 @@
 import DataLoader from "dataloader";
 import { Updoot } from "../entities/Updoot";
-import { User } from "../entities/User";
 
 // data loader for updoots
 // gets an array of objects with a postId and userId

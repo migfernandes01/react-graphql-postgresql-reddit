@@ -17,7 +17,7 @@ export const EditDeletePostButtons: React.FC<EditDeletePostButtonsProps> = ({ id
     // hook for me query to get "meData"
     const [{ data: meData }] = useMeQuery();
 
-    if(meData?.me.user?.id !== creatorId){
+    if(meData?.me?.user?.id !== creatorId){
         return null
     }
     
